@@ -1,12 +1,13 @@
-import { useEffect, useState, useRef } from 'react'
-import './App.scss'
-import avatar from './images/bozai.png'
-import _ from 'lodash'
-import classNames from 'classnames'
-import { Heart } from 'lucide-react'
-import MyComponent from './components/InputDom'
+import { useEffect, useState, useRef } from 'react';
+import _ from 'lodash';
+import classNames from 'classnames';
 import { v4 as uuidv4 } from 'uuid';
 import dayjs from 'dayjs';
+import useFetchDataWithRetryAxios from './utils/useFetchDataWithRetryAxios';
+import './App.scss';
+import avatar from './images/bozai.png';
+import CommentItem from './components/CommentItem';
+import MyComponent from './components/InputDom';
 /**
  * 评论列表的渲染和操作
  *
@@ -14,46 +15,9 @@ import dayjs from 'dayjs';
  * 2. 删除评论
  */
 
-// 评论列表数据
-const defaultList = [
-  {
-    // 评论id
-    rpid: 3,
-    // 用户信息
-    user: {
-      uid: '13258165',
-      avatar: '',
-      uname: '周杰伦',
-    },
-    // 评论内容
-    content: '哎哟，不错哦',
-    // 评论时间
-    ctime: '10-18 08:15',
-    like: 128,
-  },
-  {
-    rpid: 2,
-    user: {
-      uid: '36080105',
-      avatar: '',
-      uname: '许嵩',
-    },
-    content: '我寻你千百度 日出到迟暮',
-    ctime: '11-13 11:29',
-    like: 88,
-  },
-  {
-    rpid: 1,
-    user: {
-      uid: '30009257',
-      avatar,
-      uname: '李昊戈',
-    },
-    content: '我知道你急',
-    ctime: '10-19 09:00',
-    like: 66,
-  },
-]
+// 评论列表数据 (现在从hook获取，这里不再需要默认数据)
+// const defaultList = [...]
+
 // 当前登录用户信息
 const user = {
   // 用户id
@@ -81,19 +45,27 @@ const tabs = [
 
 const App = () => {
   const [comment, setComment] = useState('');
-  const [commentList, setCommentList] = useState(_.orderBy(defaultList, 'like', 'desc'));
+  // const [commentList, setCommentList] = useState([]); // 从 hook 中获取数据
   const [activeTab, setActiveTab] = useState('hot');
   const [uploadFiles, setUploadFiles] = useState([]);
   const textareaRef = useRef(null);
 
+  // 使用自定义 Hook 获取评论列表数据
+  const { data: commentList, loading, error } = useFetchDataWithRetryAxios("http://localhost:3004/list");
+  const [localCommentList, setLocalCommentList] = useState(commentList); // 本地状态用于排序和修改，避免直接修改 hook 返回的 data
+
+  useEffect(() => {
+    setLocalCommentList(commentList); // 当 commentList 从 hook 更新时，同步到本地状态
+  }, [commentList]);
+
+
   const handLeDel = (rpid) => {
     console.log("删除评论", rpid);
-
-    setCommentList(commentList.filter(item => item.rpid !== rpid))
+    setLocalCommentList(localCommentList.filter(item => item.rpid !== rpid))
   }
   const handleClickFormTab = (type) => {
     setActiveTab(type);
-    setCommentList(prevList => {
+    setLocalCommentList(prevList => {
       // 使用lodash的clone创建新数组
       const newCommentList = _.clone(prevList);
       // 使用lodash的orderBy进行排序
@@ -103,7 +75,7 @@ const App = () => {
     });
   }
   const handleLike = (rPid) => {
-    setCommentList(prev => prev.map(item => {
+    setLocalCommentList(prev => prev.map(item => {
       if (item.rpid === rPid) {
         return {
           ...item,
@@ -186,7 +158,7 @@ const App = () => {
       images: uploadFiles.map(f => f.preview)
     };
 
-    setCommentList(prevList => {
+    setLocalCommentList(prevList => {
       const newList = [...prevList, newComment];
       return newList;
     });
@@ -195,9 +167,7 @@ const App = () => {
     setUploadFiles([]);
     textareaRef.current.focus();
   };
-  useEffect(() => {
-    console.log('Updated commentList:', commentList);
-  }, [commentList]);
+
   useEffect(() => {
     return () => {
       uploadFiles.forEach(file => {
@@ -205,6 +175,14 @@ const App = () => {
       });
     };
   }, [uploadFiles]);
+
+  if (loading) {
+    return <div>Loading comments...</div>; // 或者更好的加载指示
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>; // 或者更好的错误处理
+  }
 
   return (
     <div className="app">
@@ -214,7 +192,7 @@ const App = () => {
           <li className="nav-title">
             <span className="nav-title-text">评论</span>
             {/* 评论数量 */}
-            <span className="total-reply">{10}</span>
+            {localCommentList && localCommentList.length > 0 && (<span className="nav-title-count">{localCommentList.length}</span>)}
           </li>
           <li className="nav-sort">
             {/* 高亮类名： active */}
@@ -295,59 +273,17 @@ const App = () => {
         </div>
         {/* 评论列表 */}
         <div className="reply-list">
-          {commentList.map((item) => {
+          {/* 此处必须使用条件渲染 */}
+          {localCommentList && localCommentList.map((item) => {
+            // 使用 CommentItem 组件，传递 props
             return (
-              <div key={item.rpid} className="reply-item">
-                {/* 头像 */}
-                <div className="root-reply-avatar">
-                  <div className="bili-avatar">
-                    <img
-                      className="bili-avatar-img"
-                      alt=""
-                      src={item.user.avatar}
-                    />
-                  </div>
-                </div>
-
-                <div className="content-wrap">
-                  {/* 用户名 */}
-                  <div className="user-info">
-                    <div className="user-name">{item.user.uname}</div>
-                  </div>
-
-                  {/* 评论内容 */}
-                  <div className="root-reply">
-                    <span className="reply-content">{item.content}</span>
-                    {item.images && item.images.length > 0 && (
-                      <div className="reply-images">
-                        {item.images.map((image, index) => (
-                          <div key={index} className="image-item">
-                            <img src={image} alt={`评论图片 ${index + 1}`} />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="reply-info">
-                      {/* 评论时间 */}
-                      <span className="reply-time">{item.ctime}</span>
-                      {/* 评论数量 */}
-                      <span className="reply-time">点赞数:{item.like}</span>
-                      <div
-                        className={classNames('reply-like', { active: item.isLiked })}
-                        onClick={() => handleLike(item.rpid)}
-                      >
-                        <Heart
-                          className='like-icon'
-                          fill={item.isLiked ? '#ff6b6b' : 'none'} />
-                      </div>
-                      {item.user.uid === user.uid && <span onClick={() => handLeDel(item.rpid)} className="delete-btn">
-                        删除
-                      </span>}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <CommentItem
+                key={item.rpid}
+                item={item}
+                handLeDel={handLeDel}
+                handleLike={handleLike}
+                currentUserUid={user.uid} // 传递当前用户uid
+              />
             )
           }
           )}
