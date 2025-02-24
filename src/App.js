@@ -8,6 +8,7 @@ import './App.scss';
 import avatar from './images/bozai.png';
 import CommentItem from './components/CommentItem';
 import MyComponent from './components/InputDom';
+import EventLoopVisualizer from './components/EventLoopVisualizer';
 /**
  * 评论列表的渲染和操作
  *
@@ -288,6 +289,7 @@ const App = () => {
           }
           )}
         </div>
+        <EventLoopVisualizer />
       </div>
     </div>
   )

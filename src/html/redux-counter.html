@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Redux Counter</title>
+    <script src="https://unpkg.com/redux@4.2.1/dist/redux.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #count {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        #console {
+            font-family: monospace;
+            white-space: pre-wrap;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+            height: 100px;
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Redux Counter Example</h1>
+        <div class="counter">
+            <button id="decrement">-</button>
+            <span id="count">0</span>
+            <button id="increment">+</button>
+        </div>
+        <div id="console"></div>
+    </div>
+
+    <script>
+        // 类型常量
+        const ActionTypes = {
+            INCREMENT: 'INCREMENT',
+            DECREMENT: 'DECREMENT'
+        }
+
+        // Reducer 函数
+        function counterReducer(state = { count: 0 }, action) {
+            logToConsole(`[Reducer] Processing action: ${action.type}`);
+            logToConsole(`Previous state: ${JSON.stringify(state)}`);
+
+            let newState = state
+            switch (action.type) {
+                case ActionTypes.INCREMENT:
+                    newState = { count: state.count + 1 }
+                    break
+                case ActionTypes.DECREMENT:
+                    newState = { count: state.count - 1 }
+                    break
+            }
+
+            logToConsole(`Next state: ${JSON.stringify(newState)}`);
+            return newState
+        }
+
+        // 创建 Store
+        logToConsole('Store Initialization');
+        const store = Redux.createStore(counterReducer)
+        logToConsole(`Store created: ${store}`);
+
+        // 订阅状态更新
+        const updateCountDisplay = () => {
+            const state = store.getState()
+            logToConsole(`[DOM Update] New count: ${state.count}`);
+            document.getElementById('count').textContent = state.count
+        }
+        store.subscribe(updateCountDisplay)
+
+        // 初始化显示
+        logToConsole('Initial Render');
+        updateCountDisplay()
+
+        // 事件处理
+        const createDispatcher = (type) => () => {
+            logToConsole(`Dispatching ${type} action`);
+            store.dispatch({ type })
+        }
+
+        document.getElementById('increment').addEventListener(
+            'click',
+            createDispatcher(ActionTypes.INCREMENT)
+        )
+
+        document.getElementById('decrement').addEventListener(
+            'click',
+            createDispatcher(ActionTypes.DECREMENT)
+        )
+
+        // 调试信息
+        logToConsole('Application initialized');
+        logToConsole(`Store state: ${JSON.stringify(store.getState())}`);
+
+        function logToConsole(message) {
+            const consoleDiv = document.getElementById('console');
+            const newMessage = document.createElement('div');
+            newMessage.textContent = message;
+            consoleDiv.appendChild(newMessage);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight; // 自动滚动到底部
+        }
+    </script>
+</body>
+
+</html>

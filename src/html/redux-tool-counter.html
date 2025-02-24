@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Redux Toolkit Counter</title>
+    <script src="https://unpkg.com/@reduxjs/toolkit@1.9.0/dist/redux-toolkit.umd.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #count {
+            font-size: 28px;
+            font-weight: bold;
+            color: #333;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        #console {
+            font-family: monospace;
+            white-space: pre-wrap;
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            margin-top: 20px;
+            height: 200px;
+            /* 增加高度以便显示更多日志 */
+            overflow-y: scroll;
+        }
+
+        .log-level-info {
+            color: #007bff;
+            /* 蓝色 */
+        }
+
+        .log-level-warn {
+            color: #ffc107;
+            /* 黄色 */
+        }
+
+        .log-level-error {
+            color: #dc3545;
+            /* 红色 */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Redux Toolkit Counter Example</h1>
+        <div class="counter">
+            <button id="decrement">-</button>
+            <span id="count">0</span>
+            <button id="increment">+</button>
+        </div>
+        <div id="console"></div>
+    </div>
+
+    <script>
+        // 使用 Redux Toolkit 创建 Slice
+        const { configureStore, createSlice } = RTK; // 修改这里，使用 ReduxToolKit
+
+        // 1.创建 Slice
+        const counterSlice = createSlice({
+            name: 'counter',
+            initialState: { count: 0 },
+            reducers: {
+                increment(state) {
+                    state.count += 1;
+                },
+                decrement(state) {
+                    state.count -= 1;
+                }
+            }
+        });
+
+        // 提取 actions 和 reducer
+        const { actions, reducer } = counterSlice;
+
+        // 创建 Store
+        logToConsole('⚙️ Store Initialization', 'info');
+        const store = configureStore({ reducer });
+        logToConsole(`📦 Store created: ${store}`, 'info', 1);
+
+        // 订阅状态更新
+        const updateCountDisplay = () => {
+            const state = store.getState();
+            logToConsole(`[DOM Update] 🔄 New count: ${state.count}`, 'info', 1);
+            document.getElementById('count').textContent = state.count;
+        };
+        store.subscribe(updateCountDisplay);
+
+        // 初始化显示
+        logToConsole('Initial Render 🎨', 'info');
+        updateCountDisplay();
+
+        // 事件处理
+        const createDispatcher = (action) => () => {
+            logToConsole(`Dispatching 🚀 ${action.type} action`, 'info', 1);
+            store.dispatch(action);
+        };
+
+        document.getElementById('increment').addEventListener(
+            'click',
+            createDispatcher(actions.increment())
+        );
+
+        document.getElementById('decrement').addEventListener(
+            'click',
+            createDispatcher(actions.decrement())
+        );
+
+        // 调试信息
+        logToConsole('Application initialized ✅', 'info');
+        logToConsole(`Store state: ${JSON.stringify(store.getState())}`, 'info', 1);
+
+        function logToConsole(message, level = 'info', indent = 0) {
+            const consoleDiv = document.getElementById('console');
+            const newMessage = document.createElement('div');
+            newMessage.style.paddingLeft = `${indent * 20}px`; // 根据 indent 增加左边距
+
+            let logLevelClass = '';
+            switch (level) {
+                case 'warn':
+                    logLevelClass = 'log-level-warn';
+                    break;
+                case 'error':
+                    logLevelClass = 'log-level-error';
+                    break;
+                default:
+                    logLevelClass = 'log-level-info';
+                    break;
+            }
+
+            newMessage.className = logLevelClass;
+            newMessage.textContent = message;
+            consoleDiv.appendChild(newMessage);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight; // 自动滚动到底部
+        }
+    </script>
+</body>
+
+</html>
